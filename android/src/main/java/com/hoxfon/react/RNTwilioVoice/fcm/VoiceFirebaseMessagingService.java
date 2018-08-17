@@ -89,11 +89,20 @@ public class VoiceFirebaseMessagingService extends FirebaseMessagingService {
                                         false,
                                         appImportance
                                 );
-                                // app is not in foreground
+                                // handle the incoming call first
+                                VoiceFirebaseMessagingService.this.handleIncomingCall((ReactApplicationContext)context, notificationId, callInvite, launchIntent);
+                                // if the app is not in the foreground, start the activity
                                 if (appImportance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                                    Log.d(TAG, "importance was not foreground. launching activity");
                                     context.startActivity(launchIntent);
                                 }
-                                VoiceFirebaseMessagingService.this.handleIncomingCall((ReactApplicationContext)context, notificationId, callInvite, launchIntent);
+                                // if the activity is IMPORTANCE_SERVICE, for some reason it takes too long to start the activity.
+                                // so we do it again ¯\_(ツ)_/¯
+                                if(appImportance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE){
+                                    Log.d(TAG, "importance service, launching app again.");
+                                    context.startActivity(launchIntent);
+                                    VoiceFirebaseMessagingService.this.handleIncomingCall((ReactApplicationContext)context, notificationId, callInvite, launchIntent);
+                                }
                             } else {
                                 // Otherwise wait for construction, then handle the incoming call
                                 mReactInstanceManager.addReactInstanceEventListener(new ReactInstanceManager.ReactInstanceEventListener() {
